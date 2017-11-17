@@ -1,50 +1,45 @@
 #ifndef ENGINE_H_INCLUDED
 #define ENGINE_H_INCLUDED
 
-#include <stdlib.h>
-#include <math.h>
+#include "vector.h"
 
-struct particl_
-{
-    double x, y, z;
-    double vx, vy, vz;
+enum CollisionObject {
+    WALL_X1 = -1, WALL_Y1 = -2, WALL_Z1 = -3, WALL_X2 = -4, WALL_Y2 = -5, WALL_Z2 = -6, NONE = -7
 };
 
-typedef struct particl_ particl;
+typedef struct _Molecule {
+    Vector r, v;
+    double R, m;
+    int next_collision_obj;
+    double next_collision_time;
+    int queue_pos;
+} Molecule;
 
-static int num;               // С‡РёСЃР»Рѕ РјРѕР»РµРєСѓР»
-static double tem;            // С‚РµРјРїРµСЂР°С‚СѓСЂР° (РІ РєРµР»СЊРІРёРЅР°С…)
-static double mass;           // РјР°СЃСЃР° (Р»СЋР±С‹Рµ СѓРґРѕР±РЅС‹Рµ РµРґРёРЅРёС†С‹ ; РґР°РІР»РµРЅРёРµ Р±СѓРґРµС‚ РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёС… РµРґРёРЅРёС†Р°С…
-                              // С‚.Рµ РґР»СЏ mass РІ РљР“, РґР°РІР»РµРЅРёРµ РІ РџРђ, РІ РјРі -> РґР°РІР»РµРЅРёРµ РІ РјРџРђ Рё С‚Рґ.
+Molecule *mols;
 
-static short atoms;           // С‡РёСЃР»Рѕ Р°С‚РѕРјРѕРІ РІ РјРѕР»РµРєСѓР»Рµ
-static double k_div_m;        // РѕС‚РЅРѕС€РµРЅРёРµ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ Р‘РѕР»СЊС†РјР°РЅР° Рє РјР°СЃСЃРµ (Р’РђР–РќРћ! СЂР°Р·РјРµСЂРЅРѕСЃС‚СЊ Р”Р–/(Рљ*РљР“) )
-static double bx, by, bz;     // СЂР°Р·РјРµСЂС‹ СЃРѕСЃСѓРґР° (РІ РјРµС‚СЂР°С…)
-static particl* container;    // РјР°СЃСЃРёРІ С‡Р°СЃС‚РёС†
+// очередь столкновений (двоичная куча)
+// queue[0] - номер молекулы, которая будет обработана при следующем вызове step()
+int *queue;
 
+// не совпадают только во время инициализации
+int mols_num, queue_length;
 
-// РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ ; РІРѕР·РІСЂР°С‰Р°РµС‚ 1 РІ СЃР»СѓС‡Р°Рµ РѕС€РёР±РєРё
-// Р·Р°РїСѓСЃРєР°С‚СЊ РІ СЃР°РјРѕРј РЅР°С‡Р°Р»Рµ
-int init_sys(int num_, double mass_, short atoms_, double boltzman_);
+double current_time, measurement_start_time;
 
-// Р·Р°РґР°РµС‚СЃСЏ С‚РµРјРїРµСЂР°С‚СѓСЂР° Рё СЂР°Р·РјРµСЂС‹ СЃРѕСЃСѓРґР°, РІС‹С‡РёСЃР»РµРЅРёРµ СЃРєРѕСЂРѕСЃС‚РµР№ РјРѕР»РµРєСѓР»
-// СЌС‚РѕР№ С„СѓРЅРєС†РёРµР№ РјРѕР¶РЅРѕ РёР·РјРµРЅРёС‚СЊ С‚РµРјРїРµСЂР°С‚СѓСЂСѓ Рё СЂР°Р·РјРµСЂ СЃРѕСЃСѓРґР° РІ Р»СЋР±РѕР№ РјРѕРјРµРЅС‚ РїСЂРѕРіСЂР°РјРјС‹
-void set_params(double tem_, double bx_, double by_, double bz);
+// с момента вызова start_measurement()
+double normal_momentum_to_walls;
+int collisions_between_mols, collisions_with_walls;
 
-// СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЃР»СѓС‡Р°Р№РЅС‹Рµ РїРѕР»РѕР¶РµРЅРёСЏ РјРѕР»РµРєСѓР»
-void set_rand_pos(void);
+// размеры сосуда
+double sx, sy, sz;
 
-// РІРѕР·РІСЂР°С‰Р°РµС‚ СЃСЂРµРґРЅРµРµ РґР°РІР»РµРЅРёРµ Р·Р° РїСЂРѕРјРµР¶СѓС‚РѕРє РІСЂРµРјРµРЅРё, РїРµСЂРµСЃС‡РёС‚С‹РІР°РµС‚ СЃРєРѕСЂРѕСЃС‚Рё Рё РєРѕРѕСЂРґРёРЅР°С‚С‹ С‡Р°СЃС‚РёС†
-// РІСЂРµРјСЏ time РІ СЃРµРєСѓРЅРґР°С…
-double update_sys(double time);
+// обработать следующее столкновение
+// столкновение может быть "пустышкой", когда mols[queue[0]].next_collision_obj == NONE
+// не работает, если все молекулы неподвижны
+void step();
 
-// РѕСЃРІРѕР±РѕР¶РґР°РµС‚ РІС‹РґРµР»РµРЅРЅСѓСЋ РїР°РјСЏС‚СЊ
-void close_sys(void);
-
-
-
-
-
-
+// инициализация с одинаковыми массами m и радиусами R
+// возвращает 1 при ошибке
+int init(int _num, double R, double m, double vx_max, double _sx, double _sy, double _sz);
 
 #endif // ENGINE_H_INCLUDED
