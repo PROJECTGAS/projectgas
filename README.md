@@ -1,8 +1,8 @@
 #####
 main.c:
 - Вычисление коэф-та диффузии и тепл-ти
-measurement.h(.c) 
+measurement.h(.c): 
 - Новые функции
-engine.h(.c)
+engine.h(.c):
 - init - инициализ. осн. пар.
 - set_molecules - добавление молекул в сосуд
